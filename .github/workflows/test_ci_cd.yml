@@ -15,14 +15,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/node-setup
 
       - name: Run tests
         run: npm test
@@ -30,21 +24,15 @@ jobs:
   cd:
     name: Demo Deploy
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/node-setup
 
       - name: Package application
         run: |
