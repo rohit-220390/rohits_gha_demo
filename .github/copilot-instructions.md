@@ -1,46 +1,43 @@
 # Copilot Instructions for `GHA_Demo`
 
-## Project purpose
-- This is a minimal Node.js demo app showing:
-  - a small Express API,
-  - unit + API tests,
-  - a GitHub Actions CI/CD pipeline.
+## Big picture
+- Minimal Node.js API demo: Express app + Jest/Supertest tests + GitHub Actions CI/CD.
+- Design goal is intentionally simple, so prefer small targeted edits over abstraction.
+- Request flow: `GET /api/calculate` in `src/app.js` -> `calculate(op, a, b)` in `src/calculator.js` -> JSON response.
 
-## Architecture and boundaries
-- Keep request/response wiring in `src/app.js`.
-- Keep business logic in `src/calculator.js` as pure functions.
-- Keep runtime bootstrap in `src/server.js` only (`app.listen(...)`).
-- Current flow: HTTP request (`/api/calculate`) -> parse query -> call `calculate(op, a, b)` -> JSON response.
+## Component boundaries (keep these strict)
+- `src/app.js`: HTTP layer only (route parsing, status codes, JSON payloads).
+- `src/calculator.js`: business rules as pure function(s); throw errors for invalid cases.
+- `src/server.js`: runtime bootstrap only (`app.listen(...)`, port wiring).
+- Keep `app` export in `src/app.js` unchanged; tests use it directly via Supertest.
 
-## Existing API contract
-- `GET /health` returns `200` with `{ "status": "ok" }`.
-- `GET /api/calculate` expects query params `op`, `a`, `b`.
-- Supported operations in `calculate`: `add`, `subtract`, `multiply`, `divide`.
-- Invalid input/operation paths throw in `calculator.js` and are converted to `400` in `app.js`.
+## API behavior to preserve
+- `GET /health` -> `200` and `{ status: 'ok' }`.
+- `GET /api/calculate?op=add&a=2&b=3` -> `200` with:
+  - `operation` (string),
+  - `a` and `b` converted with `Number(...)`,
+  - `result` from `calculate`.
+- Error contract: `calculator.js` throws; `app.js` catches and returns `400` with `{ error: error.message }`.
+- Supported ops today: `add`, `subtract`, `multiply`, `divide` (divide-by-zero throws).
 
-## Testing workflow (authoritative)
-- Use scripts from `package.json`:
-  - `npm test` -> `jest --runInBand`
-  - `npm run test:coverage` -> coverage report
-- Unit tests for business logic live in `tests/calculator.test.js`.
-- API/integration tests live in `tests/app.test.js` and use `supertest` against `app` export.
-- When changing endpoint behavior, update both calculator and app tests as needed.
+## Dev workflow (authoritative commands)
+- Install deps: `npm install` (CI uses `npm ci`).
+- Run app: `npm start` (entry is `src/server.js`, default port `3000`).
+- Watch mode: `npm run dev` (`node --watch src/server.js`).
+- Tests: `npm test` (`jest --runInBand`), coverage: `npm run test:coverage`.
 
-## CI/CD workflow expectations
-- Pipeline file: `.github/workflows/ci-cd.yml`.
-- CI job must continue to run `npm ci` and `npm test` on pushes/PRs.
-- CD job is demo-only: on `main`, package `src`, `package.json`, and `package-lock.json` into `build/node-demo-app.tar.gz`, then upload artifact.
-- Preserve this simple artifact-based deploy pattern unless explicitly asked to implement real deployment.
+## Testing patterns in this repo
+- Unit tests in `tests/calculator.test.js` validate operation behavior and thrown errors.
+- API tests in `tests/app.test.js` validate status + JSON contract using `request(app)`.
+- If endpoint behavior changes, update both calculator unit tests and app API tests.
 
-## Conventions for edits
-- Use CommonJS (`require`, `module.exports`) consistently.
-- Prefer small, targeted changes; avoid introducing frameworks or heavy abstractions.
-- Keep responses JSON-only in routes (matching current style).
-- Do not add environment/config layers unless requested; this repo is intentionally minimal.
+## CI/CD expectations
+- Workflow file: `.github/workflows/ci-cd.yml`.
+- CI must keep running `npm ci` and `npm test` on push/PR.
+- Demo CD on `main`: package `src`, `package.json`, `package-lock.json` into `build/node-demo-app.tar.gz` and upload artifact.
 
-## Quick file map
-- API routing: `src/app.js`
-- Business logic: `src/calculator.js`
-- Server entrypoint: `src/server.js`
-- Tests: `tests/*.test.js`
-- Pipeline: `.github/workflows/ci-cd.yml`
+## Conventions specific to this codebase
+- Use CommonJS only (`require`, `module.exports`), not ESM.
+- Keep route responses JSON-only and consistent with current keys.
+- Keep error message strings stable unless intentionally changing tests/contract.
+- Avoid adding config/env layers or new frameworks unless explicitly requested.
