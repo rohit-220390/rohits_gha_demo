@@ -1,0 +1,7 @@
+node_modules/
+
+# Test output
+coverage/
+
+# Local build artifact (used by demo packaging)
+build/
