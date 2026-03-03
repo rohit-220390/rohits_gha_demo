@@ -1,10 +1,10 @@
-name: Node.js CI/CD Demo (Manual)
+name: CD (Production Manual)
 
 on:
   workflow_dispatch:
 
 jobs:
-  ci:
+  pre_deploy_checks:
     name: Build and Test
     runs-on: ubuntu-latest
 
@@ -18,10 +18,10 @@ jobs:
       - name: Run tests
         run: npm test
 
-  cd:
-    name: Demo Deploy
-    needs: ci
-    if: github.ref == 'refs/heads/master'
+  deploy_production:
+    name: Deploy to Production
+    needs: pre_deploy_checks
+    environment: production
     runs-on: ubuntu-latest
 
     steps:
@@ -39,5 +39,5 @@ jobs:
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
-          name: node-demo-app
+          name: node-demo-app-production
           path: build/node-demo-app.tar.gz

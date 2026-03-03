@@ -1,4 +1,4 @@
-name: Node.js CI/CD Demo
+name: CI + CD (Lower Environment)
 
 on:
   push:
@@ -21,10 +21,11 @@ jobs:
       - name: Run tests
         run: npm test
 
-  cd:
-    name: Demo Deploy
+  deploy_lower_env:
+    name: Deploy to Lower Environment
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push'
+    environment: lower
     runs-on: ubuntu-latest
 
     steps:
@@ -42,5 +43,5 @@ jobs:
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
-          name: node-demo-app
+          name: node-demo-app-lower
           path: build/node-demo-app.tar.gz
